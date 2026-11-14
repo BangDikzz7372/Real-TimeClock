@@ -301,6 +301,59 @@
       50% { opacity: 0.85; transform: scale(1.02); }
     }
 
+
+    /* --- Panel alarm & layar alarm berbunyi --- */
+    .overlay {
+      position: fixed; inset: 0; z-index: 100;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(2, 6, 23, 0.75);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+    .overlay.show { display: flex; }
+    .panel {
+      width: 90%; max-width: 420px; max-height: 85%; overflow: auto;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 16px; padding: 16px; text-align: center;
+    }
+    .panel h3 { margin-bottom: 10px; color: #fde68a; }
+    .alarm-form { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
+    .alarm-form input[type=time], .alarm-form input[type=text] {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
+      color: #fff; border-radius: 10px; padding: 6px 8px; font-size: 14px;
+      font-family: inherit; color-scheme: dark;
+    }
+    .alarm-form input[type=text] { flex: 1; min-width: 120px; }
+    .alarm-form label { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+    .alarm-item {
+      display: flex; align-items: center; gap: 8px; padding: 8px 4px;
+      border-top: 1px dashed rgba(255,255,255,0.2); text-align: left;
+    }
+    .alarm-item .t { font-size: 24px; font-weight: bold; }
+    .alarm-item .l { flex: 1; font-size: 12px; color: #cbd5e1; word-break: break-word; }
+    .alarm-note, .alarm-empty { font-size: 11px; color: #94a3b8; padding: 6px 0; line-height: 1.4; }
+    .panel-actions { margin-top: 10px; }
+    #ringOverlay { z-index: 200; background: rgba(127, 29, 29, 0.85); }
+    #ringOverlay .panel { text-align: center; }
+    #ringOverlay h2 { font-size: 42px; animation: kelapKelip 1s infinite; }
+    #ringLabel { margin: 8px 0 14px; color: #fecaca; }
+
+    /* --- Mode widget (jam mini layar penuh) --- */
+    body.widget .copyright, body.widget #sun, body.widget #moon, body.widget #island,
+    body.widget .lighthouse, body.widget #sea, body.widget .btn-container,
+    body.widget .countdown, body.widget .birthday-event, body.widget .sim-badge { display: none !important; }
+    body.widget .clock-box {
+      top: 50%; bottom: auto; transform: translate(-50%, -50%);
+      background: transparent; border: none; box-shadow: none;
+      backdrop-filter: none; -webkit-backdrop-filter: none;
+      max-width: 100%; width: 100%;
+    }
+    body.widget .time { font-size: clamp(48px, 20vw, 130px); }
+    body.widget .ampm-text { font-size: clamp(18px, 6vw, 40px); }
+    body.widget .date { font-size: clamp(14px, 4vw, 24px); }
+    #exitWidget { display: none; position: absolute; top: 14px; right: 14px; z-index: 30; }
+    body.widget #exitWidget { display: block; }
+
     @media (max-width: 600px) {
       .copyright { font-size: 11px; padding: 4px 12px; top: 10px; }
       .clock-box { padding: 12px 20px; bottom: 15px; }
@@ -345,6 +398,8 @@
       <button class="action-btn" id="detikBtn" onclick="toggleDetik()">Sembunyikan Detik</button>
       <button class="action-btn" id="simBtn" onclick="toggleSimulasi()">Mulai Simulasi Cepat</button>
       <button class="action-btn" id="fsBtn" onclick="toggleLayarPenuh()">Layar Penuh</button>
+      <button class="action-btn" id="alarmBtn" onclick="bukaAlarm()">⏰ Alarm</button>
+      <button class="action-btn" id="widgetBtn" onclick="toggleWidget()">🧩 Mode Widget</button>
     </div>
 
     <div class="countdown" id="hitungMundur"></div>
@@ -352,6 +407,36 @@
     <div class="birthday-event" id="kejutanUltah">
       <h3>🎉 HAPPY 18th BIRTHDAY! 🎂</h3>
       <p>Selamat ulang tahun ke-18!<br>Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
+    </div>
+  </div>
+
+  <button class="action-btn" id="exitWidget" onclick="toggleWidget()">✕ Keluar Mode Widget</button>
+
+  <div class="overlay" id="alarmPanel">
+    <div class="panel">
+      <h3>⏰ Alarm</h3>
+      <div class="alarm-form">
+        <input type="time" id="alarmWaktu" value="06:00">
+        <input type="text" id="alarmLabel" placeholder="Label (opsional)" maxlength="40">
+        <label><input type="checkbox" id="alarmUlang" checked> Ulangi setiap hari</label>
+        <div style="width:100%;display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap">
+          <button class="action-btn" onclick="pilihLagu()">🎵 Pilih lagu</button>
+          <span id="laguNama" style="font-size:12px;color:#cbd5e1;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Nada bawaan</span>
+          <button class="action-btn" onclick="laguBawaan()">✕</button>
+        </div>
+        <button class="action-btn" onclick="tambahAlarm()">+ Tambah</button>
+      </div>
+      <div id="alarmDaftar"></div>
+      <div class="alarm-note" id="alarmCatatan"></div>
+      <div class="panel-actions"><button class="action-btn" onclick="tutupAlarm()">Tutup</button></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="ringOverlay">
+    <div class="panel">
+      <h2>⏰ <span id="ringTime">00:00</span></h2>
+      <div id="ringLabel">Alarm</div>
+      <button class="action-btn" style="font-size:16px;padding:10px 24px" onclick="matikanAlarm()">Matikan</button>
     </div>
   </div>
 
@@ -628,6 +713,263 @@
     perbaruiTombol();
     render();
     detak();
+  </script>
+
+  <script>
+  // ===== Alarm & Mode Widget =====
+  (function () {
+    const $ = (id) => document.getElementById(id);
+    const pad2 = (n) => (n < 10 ? '0' : '') + n;
+    const NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+    const LN = NATIVE && window.Capacitor.Plugins ? window.Capacitor.Plugins.LocalNotifications : null; // hanya untuk izin
+    const AN = NATIVE && window.Capacitor.Plugins ? window.Capacitor.Plugins.AlarmNative : null;
+    const KEY = 'jam_alarms_v1';
+
+    let alarms = [];
+    try { alarms = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { alarms = []; }
+    if (!Array.isArray(alarms)) alarms = [];
+
+    let ringNative = false;
+    const sudahBunyi = {};
+    let audioCtx = null, beepTimer = null, wakeLock = null;
+
+    function simpan() { try { localStorage.setItem(KEY, JSON.stringify(alarms)); } catch (e) {} }
+
+    function kapanBerikutnya(a) {
+      const d = new Date();
+      d.setHours(a.h, a.m, 0, 0);
+      if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+      return d;
+    }
+
+    // --- Bunyi di browser (hanya saat halaman terbuka) ---
+    function siapkanAudio() {
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      } catch (e) {}
+    }
+    function bipSekali() {
+      try {
+        siapkanAudio();
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'square'; o.frequency.value = 880; g.gain.value = 0.15;
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime + 0.2);
+      } catch (e) {}
+    }
+    function selesaiBip() { if (beepTimer) { clearInterval(beepTimer); beepTimer = null; } }
+    function mulaiBip() { selesaiBip(); bipSekali(); beepTimer = setInterval(bipSekali, 500); }
+
+    // --- Alarm native (Android): dijadwalkan lewat AlarmManager, lagu diputar oleh layanan native ---
+    let laguDipilih = null;
+
+    async function mintaIzin() {
+      if (!LN) return true;
+      try {
+        let p = await LN.checkPermissions();
+        if (p.display !== 'granted') {
+          p = await LN.requestPermissions();
+          if (p.display !== 'granted') {
+            alert('Izin notifikasi diperlukan agar alarm bisa tampil dan berbunyi.');
+            return false;
+          }
+        }
+      } catch (e) {}
+      return true;
+    }
+
+    async function jadwalkan(a) {
+      if (!AN) return;
+      try {
+        if (!a.on) { await AN.cancel({ id: a.id }); return; }
+        await AN.schedule({
+          id: a.id, h: a.h, m: a.m, repeat: !!a.repeat,
+          label: a.label || '', uri: a.song ? a.song.uri : ''
+        });
+      } catch (e) { console.error('Gagal menjadwalkan alarm', e); }
+    }
+
+    async function batalkan(a) {
+      if (!AN) return;
+      try { await AN.cancel({ id: a.id }); } catch (e) {}
+    }
+
+    async function pilihLagu() {
+      if (!AN) { alert('Memilih lagu hanya tersedia di aplikasi Android.'); return; }
+      try {
+        const r = await AN.pickSong();
+        laguDipilih = { uri: r.uri, name: r.name || 'Lagu' };
+        $('laguNama').textContent = '🎵 ' + laguDipilih.name;
+      } catch (e) { /* dibatalkan */ }
+    }
+
+    function laguBawaan() {
+      laguDipilih = null;
+      $('laguNama').textContent = 'Nada bawaan';
+    }
+
+    // --- Tampilan daftar alarm ---
+    function gambarDaftar() {
+      const wadah = $('alarmDaftar');
+      wadah.textContent = '';
+      if (!alarms.length) {
+        const k = document.createElement('div');
+        k.className = 'alarm-empty';
+        k.textContent = 'Belum ada alarm.';
+        wadah.appendChild(k);
+        return;
+      }
+      alarms.forEach((a) => {
+        const row = document.createElement('div');
+        row.className = 'alarm-item';
+
+        const t = document.createElement('div');
+        t.className = 't';
+        t.textContent = pad2(a.h) + ':' + pad2(a.m);
+
+        const l = document.createElement('div');
+        l.className = 'l';
+        l.textContent = (a.label || 'Alarm') + ' · ' + (a.repeat ? 'Setiap hari' : 'Sekali') + (a.song ? ' · 🎵 ' + a.song.name : '');
+
+        const sw = document.createElement('input');
+        sw.type = 'checkbox';
+        sw.checked = !!a.on;
+        sw.onchange = async () => {
+          a.on = sw.checked;
+          if (a.on) {
+            if (!(await mintaIzin())) { a.on = false; sw.checked = false; return; }
+            a.at = kapanBerikutnya(a).getTime();
+          }
+          simpan();
+          await jadwalkan(a);
+        };
+
+        const del = document.createElement('button');
+        del.className = 'action-btn';
+        del.textContent = '🗑';
+        del.onclick = async () => {
+          await batalkan(a);
+          alarms = alarms.filter((x) => x.id !== a.id);
+          simpan();
+          gambarDaftar();
+        };
+
+        row.appendChild(t); row.appendChild(l); row.appendChild(sw); row.appendChild(del);
+        wadah.appendChild(row);
+      });
+    }
+
+    async function tambahAlarm() {
+      const v = $('alarmWaktu').value;
+      if (!v) { alert('Pilih jam alarm dulu.'); return; }
+      siapkanAudio();
+      if (!(await mintaIzin())) return;
+      const [h, m] = v.split(':').map(Number);
+      const a = {
+        id: Math.floor(Date.now() % 2000000000),
+        h: h, m: m,
+        label: $('alarmLabel').value.trim().slice(0, 40),
+        repeat: $('alarmUlang').checked,
+        song: laguDipilih,
+        on: true
+      };
+      a.at = kapanBerikutnya(a).getTime();
+      alarms.push(a);
+      alarms.sort((x, y) => (x.h * 60 + x.m) - (y.h * 60 + y.m));
+      simpan();
+      gambarDaftar();
+      $('alarmLabel').value = '';
+      laguBawaan();
+      await jadwalkan(a);
+    }
+
+    function bukaAlarm() { siapkanAudio(); gambarDaftar(); $('alarmPanel').classList.add('show'); }
+    function tutupAlarm() { $('alarmPanel').classList.remove('show'); }
+
+    // --- Layar "alarm berbunyi" ---
+    function bunyi(a) {
+      $('ringTime').textContent = pad2(a.h) + ':' + pad2(a.m);
+      $('ringLabel').textContent = a.label || 'Alarm';
+      $('ringOverlay').classList.add('show');
+      if (!NATIVE) {
+        mulaiBip();
+        if (navigator.vibrate) navigator.vibrate([500, 300, 500]);
+      }
+    }
+    function matikanAlarm() {
+      $('ringOverlay').classList.remove('show');
+      selesaiBip();
+      ringNative = false;
+      if (AN) { try { AN.stop(); } catch (e) {} }
+    }
+
+    // Cek tiap detik saat halaman terbuka
+    setInterval(() => {
+      const n = new Date();
+      const h = n.getHours(), m = n.getMinutes();
+      const kunci = n.toDateString() + ' ' + h + ':' + m;
+      let berubah = false;
+      alarms.forEach((a) => {
+        if (!a.on || a.h !== h || a.m !== m) return;
+        if (sudahBunyi[a.id] === kunci) return;
+        sudahBunyi[a.id] = kunci;
+        if (!a.repeat) { a.on = false; berubah = true; }
+        bunyi(a);
+      });
+      if (berubah) { simpan(); gambarDaftar(); }
+    }, 1000);
+
+    // --- Mode widget ---
+    async function toggleWidget() {
+      const aktif = document.body.classList.toggle('widget');
+      try {
+        if (aktif) {
+          if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen');
+        } else if (wakeLock) {
+          await wakeLock.release(); wakeLock = null;
+        }
+      } catch (e) {}
+    }
+
+    window.bukaAlarm = bukaAlarm;
+    window.tutupAlarm = tutupAlarm;
+    window.tambahAlarm = tambahAlarm;
+    window.matikanAlarm = matikanAlarm;
+    window.toggleWidget = toggleWidget;
+    window.pilihLagu = pilihLagu;
+    window.laguBawaan = laguBawaan;
+
+    // --- Awal ---
+    $('alarmCatatan').textContent = NATIVE
+      ? 'Alarm tetap berbunyi walau aplikasi ditutup. Jika tidak berbunyi, izinkan notifikasi dan "Alarm & pengingat" di pengaturan aplikasi.'
+      : 'Di browser, alarm hanya berbunyi saat halaman ini terbuka. Pasang aplikasinya agar alarm tetap berbunyi saat ditutup.';
+
+    if (NATIVE) {
+      const fs = $('fsBtn'); if (fs) fs.style.display = 'none';
+      // Alarm sekali yang waktunya sudah lewat dianggap selesai
+      alarms.forEach((a) => { if (!a.repeat && a.on && a.at && a.at < Date.now() - 60000) a.on = false; });
+      simpan();
+      alarms.forEach((a) => jadwalkan(a));
+      // Sinkronkan layar "alarm berbunyi" dengan layanan native (termasuk saat dimatikan dari notifikasi)
+      const cekBerbunyi = () => {
+        AN.getRinging().then((r) => {
+          if (r.ringing && !ringNative) {
+            ringNative = true;
+            bunyi({ h: r.h, m: r.m, label: r.label });
+          } else if (!r.ringing && ringNative) {
+            ringNative = false;
+            $('ringOverlay').classList.remove('show');
+          }
+        }).catch(() => {});
+      };
+      if (AN) {
+        cekBerbunyi();
+        setInterval(cekBerbunyi, 1500);
+        document.addEventListener('visibilitychange', cekBerbunyi);
+      }
+    }
+  })();
   </script>
 </body>
 </html>
