@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jam Digital Ultimate Day/Night</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      /* --vw & --vh diisi dari JavaScript (ukuran layar yang benar-benar terlihat).
+         Body dikunci (fixed) ke layar sehingga tidak bisa bergeser/ter-scroll
+         setelah keluar dari mode layar penuh */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--vw, 100%);
+      height: calc(var(--vh, 1vh) * 100);
+      font-family: 'Courier New', Courier, monospace; 
+      color: #fff; 
+      overflow: hidden;
+    }
+
+    /* --- HAK CIPTA / WATERMARK (DI ATAS TENGAH) --- */
+    .copyright {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.85);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      text-transform: uppercase;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    /* --- Langit --- */
+    #sky {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: -5;
+      transition: background 2s ease;
+      background: linear-gradient(to bottom, #0f172a, #1e293b); 
+    }
+
+    /* --- Benda Langit (Matahari & Bulan) --- */
+    .celestial-body {
+      position: absolute;
+      border-radius: 50%;
+      transition: all 1s linear;
+      z-index: -4;
+      transform: translateX(-50%);
+    }
+
+    #sun {
+      width: 80px; height: 80px;
+      background: #fde047;
+      box-shadow: 0 0 50px #facc15, 0 0 90px #fef08a;
+      bottom: -100px;
+    }
+
+    #moon {
+      width: 75px; height: 75px;
+      background: #e2e8f0;
+      box-shadow: 0 0 35px #cbd5e1, 0 0 70px #f8fafc;
+      background-image: radial-gradient(circle at 30% 30%, rgba(0,0,0,0.1) 10%, transparent 12%),
+                        radial-gradient(circle at 70% 60%, rgba(0,0,0,0.1) 15%, transparent 17%);
+      bottom: -100px;
+    }
+
+    /* --- Lautan --- */
+    #sea {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%; height: calc(var(--vh, 1vh) * 35);
+      background: #0284c7;
+      z-index: -3;
+      border-top: 2px solid rgba(255,255,255,0.2);
+      transition: background 2s ease;
+    }
+
+    /* --- Pulau --- */
+    #island {
+      position: absolute;
+      bottom: calc(var(--vh, 1vh) * 35);
+      left: 50%;
+      transform: translateX(-50%) translateY(40%);
+      width: 240px;
+      height: 60px;
+      background: #15803d; 
+      border-radius: 50%;
+      z-index: -2;
+      transition: background 2s ease;
+      box-shadow: inset 0 -10px 15px rgba(0,0,0,0.4);
+    }
+
+    /* --- MERCUSUAR --- */
+    .lighthouse {
+      position: absolute;
+      bottom: calc(var(--vh, 1vh) * 35);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .lh-roof {
+      width: 0; height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-bottom: 16px solid #dc2626;
+      z-index: 2;
+    }
+
+    .lh-lamp {
+      width: 26px; height: 20px;
+      background: #fef08a;
+      border: 2px solid #1e293b;
+      position: relative;
+      z-index: 2;
+    }
+
+    .lh-glow {
+      position: absolute;
+      top: -15px; left: -17px;
+      width: 56px; height: 46px;
+      background: rgba(254, 240, 138, 0.6);
+      border-radius: 50%;
+      filter: blur(8px);
+      opacity: 0; 
+      transition: opacity 1.5s ease;
+    }
+
+    .lh-beam {
+      position: absolute;
+      top: 10px; 
+      left: 50%;
+      width: 500px;
+      height: calc(var(--vh, 1vh) * 70);
+      background: linear-gradient(to bottom, rgba(254, 240, 138, 0.45) 0%, transparent 80%);
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      transform-origin: top center;
+      animation: sweep 6s infinite ease-in-out;
+      opacity: 0; 
+      transition: opacity 1.5s ease;
+      pointer-events: none; 
+      z-index: -1; 
+    }
+
+    @keyframes sweep {
+      0%, 100% { transform: translateX(-50%) rotate(-55deg); }
+      50% { transform: translateX(-50%) rotate(55deg); }
+    }
+
+    .lh-body {
+      width: 38px;
+      height: 85px;
+      background: repeating-linear-gradient(
+        0deg,
+        #dc2626,
+        #dc2626 18px,
+        #ffffff 18px,
+        #ffffff 36px
+      );
+      clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
+    }
+
+    .lh-base {
+      width: 52px;
+      height: 14px;
+      background: #475569;
+      border-radius: 4px 4px 0 0;
+    }
+
+    /* --- JAM DIGITAL --- */
+    .clock-box {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(15, 23, 42, 0.65); 
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 15px 30px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+      width: 90%;
+      max-width: 480px;
+    }
+
+    .time {
+      font-size: 45px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.8); 
+      margin-bottom: 2px;
+    }
+
+    .ampm-text {
+      font-size: 20px;
+      margin-left: 8px;
+      opacity: 0.85;
+    }
+
+    .date {
+      font-size: 16px;
+      margin-bottom: 12px;
+      text-shadow: 0 0 6px rgba(255,255,255,0.5);
+      color: #cbd5e1;
+    }
+
+    .greeting {
+      font-size: 14px;
+      color: #fde68a;
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+      text-shadow: 0 0 6px rgba(253, 230, 138, 0.5);
+    }
+
+    .zone {
+      display: inline-block;
+      font-size: 11px;
+      padding: 1px 8px;
+      margin-left: 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #e2e8f0;
+      vertical-align: middle;
+    }
+
+    .sim-badge {
+      display: none;
+      font-size: 11px;
+      color: #fca5a5;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+      animation: kelapKelip 1s infinite;
+    }
+    body.simulasi .sim-badge { display: block; }
+    body.simulasi .celestial-body { transition: all 0.1s linear; }
+
+    .countdown {
+      font-size: 12px;
+      color: #f9a8d4;
+      margin-top: 10px;
+      opacity: 0.9;
+    }
+
+    .btn-container { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .action-btn:focus-visible { outline: 2px solid #fde047; outline-offset: 2px; }
+
+    .action-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .action-btn:hover { background: rgba(255, 255, 255, 0.3); }
+
+    .birthday-event {
+      display: none; 
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(255,255,255,0.3);
+      animation: kelapKelip 1.5s infinite;
+    }
+    .birthday-event h3 { color: #f472b6; font-size: 18px; text-shadow: 0 0 10px #ec4899; margin-bottom: 4px; }
+    .birthday-event p { font-size: 12px; line-height: 1.4; color: #fbcfe8; }
+
+    @keyframes kelapKelip {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+
+    @media (max-width: 600px) {
+      .copyright { font-size: 11px; padding: 4px 12px; top: 10px; }
+      .clock-box { padding: 12px 20px; bottom: 15px; }
+      .time { font-size: 36px; } 
+      .ampm-text { font-size: 16px; }
+      .date { font-size: 13px; }
+      .action-btn { font-size: 11px; padding: 5px 10px; }
+      #island { width: 180px; height: 45px; } 
+    }
+  </style>
+</head>
+<body>
+
+  <div class="copyright">By Lord_Dikzz</div>
+
+  <div id="sky"></div>
+  <div id="sun" class="celestial-body"></div>
+  <div id="moon" class="celestial-body"></div>
+  
+  <div id="island"></div>
+
+  <div class="lighthouse">
+    <div class="lh-roof"></div>
+    <div class="lh-lamp">
+      <div class="lh-glow" id="lampGlow"></div>
+      <div class="lh-beam" id="lampBeam"></div>
+    </div>
+    <div class="lh-body"></div>
+    <div class="lh-base"></div>
+  </div>
+
+  <div id="sea"></div>
+
+  <div class="clock-box" id="box">
+    <div class="sim-badge">⏩ MODE SIMULASI</div>
+    <div class="greeting" id="salam">&nbsp;</div>
+    <div class="time" id="jam" aria-live="off">00:00:00</div>
+    <div class="date"><span id="tanggal">Memuat...</span><span class="zone" id="zona"></span></div>
+
+    <div class="btn-container">
+      <button class="action-btn" id="modeBtn" onclick="ubahMode()">Beralih ke 24 Jam</button>
+      <button class="action-btn" id="detikBtn" onclick="toggleDetik()">Sembunyikan Detik</button>
+      <button class="action-btn" id="simBtn" onclick="toggleSimulasi()">Mulai Simulasi Cepat</button>
+      <button class="action-btn" id="fsBtn" onclick="toggleLayarPenuh()">Layar Penuh</button>
+    </div>
+
+    <div class="countdown" id="hitungMundur"></div>
+
+    <div class="birthday-event" id="kejutanUltah">
+      <h3>🎉 HAPPY 18th BIRTHDAY! 🎂</h3>
+      <p>Selamat ulang tahun ke-18!<br>Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
+    </div>
+  </div>
+
+  <script>
+    // --- Pengaturan (disimpan di browser agar tidak hilang saat halaman dibuka ulang) ---
+    function bacaPref(kunci, bawaan) {
+      try {
+        const v = localStorage.getItem(kunci);
+        return v === null ? bawaan : v === '1';
+      } catch (e) { return bawaan; }
+    }
+    function simpanPref(kunci, nilai) {
+      try { localStorage.setItem(kunci, nilai ? '1' : '0'); } catch (e) {}
+    }
+
+    let format12Jam = bacaPref('jam_format12', true);
+    let tampilDetik = bacaPref('jam_detik', true);
+    let modeSimulasi = false;
+    let waktuSimulasi = 0;      // dalam menit (0 - 1440)
+    let timerSimulasi = null;
+    let timerJam = null;
+
+    const BULAN_ULTAH = 0;      // Januari (0 = Januari)
+    const TANGGAL_ULTAH = 25;
+
+    const namaHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const namaBulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
+                       'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+    const pad = (n) => (n < 10 ? '0' + n : '' + n);
+
+    function perbaruiTombol() {
+      document.getElementById('modeBtn').innerText = format12Jam ? 'Beralih ke 24 Jam' : 'Beralih ke 12 Jam (AM/PM)';
+      document.getElementById('detikBtn').innerText = tampilDetik ? 'Sembunyikan Detik' : 'Tampilkan Detik';
+      document.getElementById('simBtn').innerText = modeSimulasi ? 'Hentikan Simulasi' : 'Mulai Simulasi Cepat';
+      document.getElementById('fsBtn').innerText = elemenLayarPenuh() ? 'Keluar Layar Penuh' : 'Layar Penuh';
+    }
+
+    function ubahMode() {
+      format12Jam = !format12Jam;
+      simpanPref('jam_format12', format12Jam);
+      perbaruiTombol();
+      render();
+    }
+
+    function toggleDetik() {
+      tampilDetik = !tampilDetik;
+      simpanPref('jam_detik', tampilDetik);
+      perbaruiTombol();
+      render();
+    }
+
+    function toggleSimulasi() {
+      modeSimulasi = !modeSimulasi;
+      document.body.classList.toggle('simulasi', modeSimulasi);
+      if (modeSimulasi) {
+        const n = new Date();
+        waktuSimulasi = n.getHours() * 60 + n.getMinutes();
+        // 1,5 menit setiap 100 ms = 15 menit per detik, tetapi bergerak lebih halus
+        timerSimulasi = setInterval(() => {
+          waktuSimulasi = (waktuSimulasi + 1.5) % 1440;
+          render();
+        }, 100);
+      } else {
+        clearInterval(timerSimulasi);
+        timerSimulasi = null;
+      }
+      perbaruiTombol();
+      render();
+    }
+
+    // --- Layar penuh (dengan dukungan awalan webkit untuk Safari / browser lama) ---
+    const akar = document.documentElement;
+    const mintaLayarPenuh = akar.requestFullscreen || akar.webkitRequestFullscreen;
+    const keluarLayarPenuh = document.exitFullscreen || document.webkitExitFullscreen;
+    function elemenLayarPenuh() {
+      return document.fullscreenElement || document.webkitFullscreenElement || null;
+    }
+
+    function toggleLayarPenuh() {
+      let hasil;
+      if (!elemenLayarPenuh()) {
+        if (mintaLayarPenuh) hasil = mintaLayarPenuh.call(akar);
+      } else if (keluarLayarPenuh) {
+        hasil = keluarLayarPenuh.call(document);
+      }
+      if (hasil && hasil.catch) hasil.catch(() => {});
+      document.getElementById('fsBtn').blur();
+    }
+
+    // Simpan ukuran layar yang benar-benar terlihat ke variabel CSS --vw dan --vh
+    const metaViewport = document.querySelector('meta[name="viewport"]');
+    const VIEWPORT_ASLI = metaViewport.getAttribute('content');
+
+    function ukurLayar() {
+      const vv = window.visualViewport;
+      // visualViewport paling akurat setelah keluar layar penuh (jika tidak sedang di-zoom)
+      if (vv && Math.abs(vv.scale - 1) < 0.01) {
+        return { w: vv.width, h: vv.height };
+      }
+      return { w: window.innerWidth, h: window.innerHeight };
+    }
+
+    function sesuaikanUkuran() {
+      const { w, h } = ukurLayar();
+      const root = document.documentElement;
+      root.style.setProperty('--vw', w + 'px');
+      root.style.setProperty('--vh', (h / 100) + 'px');
+      // Kembalikan posisi halaman ke awal (browser HP kadang menyisakan halaman tergeser)
+      window.scrollTo(0, 0);
+      if (document.scrollingElement) {
+        document.scrollingElement.scrollLeft = 0;
+        document.scrollingElement.scrollTop = 0;
+      }
+      document.body.scrollLeft = 0;
+      document.body.scrollTop = 0;
+    }
+
+    // Paksa browser menghitung ulang viewport (mengatasi tampilan yang "nyangkut"
+    // dengan lebar lama setelah keluar dari layar penuh)
+    function paksaViewportUlang() {
+      metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
+      requestAnimationFrame(() => {
+        metaViewport.setAttribute('content', VIEWPORT_ASLI);
+        sesuaikanUkuran();
+      });
+    }
+
+    function saatLayarPenuhBerubah() {
+      perbaruiTombol();
+      sesuaikanUkuran();
+      paksaViewportUlang();
+      // Ukuran layar baru sering baru final sesaat setelah event, jadi ukur ulang beberapa kali
+      [100, 300, 600, 1000].forEach((ms) => setTimeout(sesuaikanUkuran, ms));
+      render();
+    }
+
+    document.addEventListener('fullscreenchange', saatLayarPenuhBerubah);
+    document.addEventListener('webkitfullscreenchange', saatLayarPenuhBerubah);
+    window.addEventListener('resize', sesuaikanUkuran);
+    window.addEventListener('scroll', () => {
+      if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+    });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', sesuaikanUkuran);
+      window.visualViewport.addEventListener('scroll', sesuaikanUkuran);
+    }
+    window.addEventListener('orientationchange', () => setTimeout(sesuaikanUkuran, 200));
+    if (!mintaLayarPenuh) document.getElementById('fsBtn').style.display = 'none';
+    sesuaikanUkuran();
+
+    function ambilSalam(jam) {
+      if (jam >= 4 && jam < 11) return '☀️ Selamat Pagi';
+      if (jam >= 11 && jam < 15) return '🌤️ Selamat Siang';
+      if (jam >= 15 && jam < 18) return '🌇 Selamat Sore';
+      return '🌙 Selamat Malam';
+    }
+
+    function ambilZonaWaktu(tgl) {
+      const offsetJam = -tgl.getTimezoneOffset() / 60;
+      if (offsetJam === 7) return 'WIB';
+      if (offsetJam === 8) return 'WITA';
+      if (offsetJam === 9) return 'WIT';
+      const tanda = offsetJam >= 0 ? '+' : '-';
+      const abs = Math.abs(offsetJam);
+      const j = Math.floor(abs), m = Math.round((abs - j) * 60);
+      return 'UTC' + tanda + j + (m ? ':' + pad(m) : '');
+    }
+
+    function hariMenujuUltah(sekarang) {
+      const hariIni = new Date(sekarang.getFullYear(), sekarang.getMonth(), sekarang.getDate());
+      let target = new Date(sekarang.getFullYear(), BULAN_ULTAH, TANGGAL_ULTAH);
+      if (target < hariIni) target = new Date(sekarang.getFullYear() + 1, BULAN_ULTAH, TANGGAL_ULTAH);
+      return Math.round((target - hariIni) / 86400000);
+    }
+
+    function updateLingkungan(jamAsli, menitAsli) {
+      const sky = document.getElementById('sky');
+      const sea = document.getElementById('sea');
+      const sun = document.getElementById('sun');
+      const moon = document.getElementById('moon');
+      const island = document.getElementById('island');
+      const lampGlow = document.getElementById('lampGlow');
+      const lampBeam = document.getElementById('lampBeam');
+
+      const waktuDesimal = jamAsli + (menitAsli / 60);
+
+      if (waktuDesimal >= 6 && waktuDesimal < 18) {
+        sky.style.background = 'linear-gradient(to bottom, #38bdf8, #bae6fd)';
+        sea.style.background = '#0284c7';
+        island.style.background = '#15803d';
+        lampGlow.style.opacity = '0';
+        lampBeam.style.opacity = '0';
+
+        const progresSiang = (waktuDesimal - 6) / 12;
+        const tinggiLengkungan = 4 * progresSiang * (1 - progresSiang);
+
+        sun.style.left = (progresSiang * 100) + '%';
+        sun.style.bottom = 'calc(var(--vh, 1vh) * ' + (30 + tinggiLengkungan * 55) + ')';
+        moon.style.bottom = 'calc(var(--vh, 1vh) * -20)';
+      } else {
+        sky.style.background = 'linear-gradient(to bottom, #0f172a, #1e293b)';
+        sea.style.background = '#082f49';
+        island.style.background = '#022c22';
+        lampGlow.style.opacity = '1';
+        lampBeam.style.opacity = '1';
+
+        let waktuMalam = waktuDesimal;
+        if (waktuMalam < 6) waktuMalam += 24;
+
+        const progresMalam = (waktuMalam - 18) / 12;
+        const tinggiLengkungan = 4 * progresMalam * (1 - progresMalam);
+
+        moon.style.left = (progresMalam * 100) + '%';
+        moon.style.bottom = 'calc(var(--vh, 1vh) * ' + (30 + tinggiLengkungan * 55) + ')';
+        sun.style.bottom = 'calc(var(--vh, 1vh) * -20)';
+      }
+    }
+
+    // Menggambar ulang semua tampilan tanpa memajukan waktu simulasi
+    function render() {
+      const sekarang = new Date();
+      let jam, menit, detik;
+
+      if (modeSimulasi) {
+        jam = Math.floor(waktuSimulasi / 60);
+        menit = Math.floor(waktuSimulasi % 60);
+        detik = 0;
+      } else {
+        jam = sekarang.getHours();
+        menit = sekarang.getMinutes();
+        detik = sekarang.getSeconds();
+      }
+
+      updateLingkungan(jam, modeSimulasi ? (waktuSimulasi % 60) : menit);
+      document.getElementById('salam').innerText = ambilSalam(jam);
+
+      let ampm = '';
+      let jamTampil = jam;
+      if (format12Jam) {
+        ampm = '<span class="ampm-text">' + (jam >= 12 ? 'PM' : 'AM') + '</span>';
+        jamTampil = jam % 12 || 12;
+      }
+
+      const teksWaktu = pad(jamTampil) + ':' + pad(menit) + (tampilDetik ? ':' + pad(detik) : '');
+      document.getElementById('jam').innerHTML = teksWaktu + ampm;
+
+      document.getElementById('tanggal').innerText =
+        namaHari[sekarang.getDay()] + ', ' + sekarang.getDate() + ' ' + namaBulan[sekarang.getMonth()] + ' ' + sekarang.getFullYear();
+      document.getElementById('zona').innerText = ambilZonaWaktu(sekarang);
+
+      document.title = (modeSimulasi ? 'Jam Digital Ultimate Day/Night'
+        : pad(jamTampil) + ':' + pad(menit) + (format12Jam ? (jam >= 12 ? ' PM' : ' AM') : '') + ' · Jam Digital');
+
+      // Ulang tahun: tampil hanya pada harinya, selain itu tampilkan hitung mundur
+      const box = document.getElementById('box');
+      const sisaHari = hariMenujuUltah(sekarang);
+      const ultah = sisaHari === 0;
+      document.getElementById('kejutanUltah').style.display = ultah ? 'block' : 'none';
+      document.getElementById('hitungMundur').innerText = ultah ? '' : '🎂 ' + sisaHari + ' hari lagi menuju hari ulang tahun';
+      box.style.borderColor = ultah ? 'rgba(236, 72, 153, 0.8)' : '';
+      box.style.boxShadow = ultah ? '0 0 25px rgba(236, 72, 153, 0.5)' : '';
+    }
+
+    // Detak jam diselaraskan dengan pergantian detik agar tidak telat/melompat
+    function detak() {
+      if (!modeSimulasi) render();
+      timerJam = setTimeout(detak, 1000 - (Date.now() % 1000) + 5);
+    }
+
+    // Saat tab dibuka kembali, langsung perbarui tampilan
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+
+    perbaruiTombol();
+    render();
+    detak();
+  </script>
+</body>
+</html>
