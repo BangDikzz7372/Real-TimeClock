@@ -427,8 +427,12 @@
         <button class="action-btn" onclick="tambahAlarm()">+ Tambah</button>
       </div>
       <div id="alarmDaftar"></div>
+      <div class="alarm-note" id="alarmStatus"></div>
       <div class="alarm-note" id="alarmCatatan"></div>
-      <div class="panel-actions"><button class="action-btn" onclick="tutupAlarm()">Tutup</button></div>
+      <div class="panel-actions">
+        <button class="action-btn" onclick="tesAlarm()">🔔 Tes bunyi</button>
+        <button class="action-btn" onclick="tutupAlarm()">Tutup</button>
+      </div>
     </div>
   </div>
 
@@ -436,6 +440,7 @@
     <div class="panel">
       <h2>⏰ <span id="ringTime">00:00</span></h2>
       <div id="ringLabel">Alarm</div>
+      <div id="ringInfo" class="alarm-note"></div>
       <button class="action-btn" style="font-size:16px;padding:10px 24px" onclick="matikanAlarm()">Matikan</button>
     </div>
   </div>
@@ -780,14 +785,14 @@
     }
 
     async function jadwalkan(a) {
-      if (!AN) return;
+      if (!AN) { if (NATIVE) alert('Mesin alarm native tidak ditemukan. Pasang ulang APK terbaru.'); return; }
       try {
         if (!a.on) { await AN.cancel({ id: a.id }); return; }
         await AN.schedule({
           id: a.id, h: a.h, m: a.m, repeat: !!a.repeat,
           label: a.label || '', uri: a.song ? a.song.uri : ''
         });
-      } catch (e) { console.error('Gagal menjadwalkan alarm', e); }
+      } catch (e) { alert('Gagal menjadwalkan alarm: ' + (e && e.message ? e.message : e)); }
     }
 
     async function batalkan(a) {
@@ -802,6 +807,14 @@
         laguDipilih = { uri: r.uri, name: r.name || 'Lagu' };
         $('laguNama').textContent = '🎵 ' + laguDipilih.name;
       } catch (e) { /* dibatalkan */ }
+    }
+
+    async function tesAlarm() {
+      if (!AN) { alert('Tes bunyi hanya tersedia di aplikasi Android.'); return; }
+      await mintaIzin();
+      try {
+        await AN.testRing({ uri: laguDipilih ? laguDipilih.uri : '' });
+      } catch (e) { alert('Gagal: ' + (e && e.message ? e.message : e)); }
     }
 
     function laguBawaan() {
@@ -891,6 +904,7 @@
     function bunyi(a) {
       $('ringTime').textContent = pad2(a.h) + ':' + pad2(a.m);
       $('ringLabel').textContent = a.label || 'Alarm';
+      $('ringInfo').textContent = a.info ? 'Suara: ' + a.info : '';
       $('ringOverlay').classList.add('show');
       if (!NATIVE) {
         mulaiBip();
@@ -939,11 +953,16 @@
     window.toggleWidget = toggleWidget;
     window.pilihLagu = pilihLagu;
     window.laguBawaan = laguBawaan;
+    window.tesAlarm = tesAlarm;
 
     // --- Awal ---
     $('alarmCatatan').textContent = NATIVE
       ? 'Alarm tetap berbunyi walau aplikasi ditutup. Jika tidak berbunyi, izinkan notifikasi dan "Alarm & pengingat" di pengaturan aplikasi.'
       : 'Di browser, alarm hanya berbunyi saat halaman ini terbuka. Pasang aplikasinya agar alarm tetap berbunyi saat ditutup.';
+
+    $('alarmStatus').textContent = NATIVE
+      ? (AN ? 'Mesin alarm native: aktif ✅' : 'Mesin alarm native: TIDAK DITEMUKAN ❌ (pasang ulang APK terbaru)')
+      : '';
 
     if (NATIVE) {
       const fs = $('fsBtn'); if (fs) fs.style.display = 'none';
@@ -956,7 +975,7 @@
         AN.getRinging().then((r) => {
           if (r.ringing && !ringNative) {
             ringNative = true;
-            bunyi({ h: r.h, m: r.m, label: r.label });
+            bunyi({ h: r.h, m: r.m, label: r.label, info: r.sumber });
           } else if (!r.ringing && ringNative) {
             ringNative = false;
             $('ringOverlay').classList.remove('show');
