@@ -340,6 +340,27 @@
     #ringOverlay h2 { font-size: 42px; animation: kelapKelip 1s infinite; }
     #ringLabel { margin: 8px 0 14px; color: #fecaca; }
 
+
+    /* --- Lembar tambah alarm (gaya jam sistem) --- */
+    .sheet-wrap { align-items: flex-end; }
+    .sheet { width: 100%; max-width: 480px; max-height: 92%; overflow: auto; background: #1f1f1f; border-radius: 28px 28px 0 0; padding: 16px 16px 20px; color: #fff; }
+    .sheet-head { display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .xbtn { width: 38px; height: 38px; border-radius: 50%; border: none; background: #4a4a4a; color: #fff; font-size: 16px; }
+    .wheels { position: relative; display: flex; gap: 8px; height: 220px; margin-bottom: 12px; }
+    .wheel { flex: 1; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; text-align: center; }
+    .wheel::-webkit-scrollbar { display: none; }
+    .wi { height: 44px; line-height: 44px; font-size: 22px; color: #777; scroll-snap-align: center; }
+    .wi.sel { color: #fff; font-size: 30px; font-weight: bold; }
+    .wsel { position: absolute; left: 0; right: 0; top: 88px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.06); pointer-events: none; }
+    .card { background: #2c2c2c; border-radius: 20px; padding: 4px 14px; margin-bottom: 14px; }
+    .card .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 13px 0; border-bottom: 1px solid #3d3d3d; font-size: 15px; }
+    .card .row:last-child { border-bottom: none; }
+    .card small { display: block; font-size: 12px; color: #aaa; margin-top: 2px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card select, .card input[type=text] { background: transparent; border: none; color: #bbb; font-family: inherit; font-size: 14px; text-align: right; color-scheme: dark; max-width: 150px; }
+    .card input[type=text] { outline: none; }
+    .sw { width: 44px; height: 24px; accent-color: #f59e0b; }
+    .simpan { width: 100%; padding: 14px; border: none; border-radius: 30px; background: #ff9500; color: #fff; font-size: 17px; font-weight: bold; font-family: inherit; }
+
     /* --- Mode widget (jam mini layar penuh) --- */
     body.widget .copyright, body.widget #sun, body.widget #moon, body.widget #island,
     body.widget .lighthouse, body.widget #sea, body.widget .btn-container,
@@ -419,24 +440,33 @@ Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
   <div class="overlay" id="alarmPanel">
     <div class="panel">
       <h3>⏰ Alarm</h3>
-      <div class="alarm-form">
-        <input type="time" id="alarmWaktu" value="06:00">
-        <input type="text" id="alarmLabel" placeholder="Label (opsional)" maxlength="40">
-        <label><input type="checkbox" id="alarmUlang" checked> Ulangi setiap hari</label>
-        <div style="width:100%;display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap">
-          <button class="action-btn" onclick="pilihLagu()">🎵 Pilih lagu</button>
-          <span id="laguNama" style="font-size:12px;color:#cbd5e1;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Nada bawaan</span>
-          <button class="action-btn" onclick="laguBawaan()">✕</button>
-        </div>
-        <button class="action-btn" onclick="tambahAlarm()">+ Tambah</button>
-      </div>
       <div id="alarmDaftar"></div>
       <div class="alarm-note" id="alarmStatus"></div>
       <div class="alarm-note" id="alarmCatatan"></div>
       <div class="panel-actions">
+        <button class="action-btn" onclick="editAlarm(null)">+ Tambah</button>
         <button class="action-btn" onclick="tesAlarm()">🔔 Tes bunyi</button>
         <button class="action-btn" onclick="tutupAlarm()">Tutup</button>
       </div>
+    </div>
+  </div>
+
+  <div class="overlay sheet-wrap" id="sheetAlarm">
+    <div class="sheet">
+      <div class="sheet-head"><span id="sheetJudul">Tambahkan alarm</span><button class="xbtn" onclick="tutupSheet()">✕</button></div>
+      <div class="wheels">
+        <div class="wheel" id="wJam"></div><div class="wheel" id="wMenit"></div><div class="wheel" id="wAmpm"></div>
+        <div class="wsel"></div>
+      </div>
+      <div class="card">
+        <div class="row"><span>Ulangi</span>
+          <select id="sUlang"><option value="0">Satu kali</option><option value="127">Setiap hari</option><option value="62">Senin–Jumat</option><option value="65">Akhir pekan</option></select></div>
+        <div class="row" onclick="pilihLagu()"><span>Nada Dering<small id="laguNama">Nada bawaan</small></span><span>›</span></div>
+        <div class="row"><span>Label</span><input type="text" id="sLabel" maxlength="40" placeholder="Opsional"></div>
+        <div class="row"><span>Tunda</span><span><select id="sTundaMnt"></select> <select id="sTundaKali"></select></span></div>
+        <div class="row"><span>Bergetar ketika Berdering</span><input type="checkbox" id="sGetar" class="sw" checked></div>
+      </div>
+      <button class="simpan" onclick="simpanAlarm()">Simpan</button>
     </div>
   </div>
 
@@ -464,6 +494,7 @@ Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
       <div id="ringLabel">Alarm</div>
       <div id="ringInfo" class="alarm-note"></div>
       <button class="action-btn" style="font-size:16px;padding:10px 24px" onclick="matikanAlarm()">Matikan</button>
+      <button class="action-btn" id="ringTunda" style="font-size:16px;padding:10px 24px;display:none" onclick="tundaAlarm()">Tunda</button>
     </div>
   </div>
 
@@ -697,6 +728,7 @@ Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
       if (y && (y < 1900 || y > new Date().getFullYear())) { alert('Tahun lahir tidak valid.'); return; }
       dataUltah = { d: d, m: m, y: y, nama: document.getElementById('ultahNama').value.trim().slice(0, 30) };
       try { localStorage.setItem(KUNCI_ULTAH, JSON.stringify(dataUltah)); } catch (e) {}
+      if (window.sinkronUltah) window.sinkronUltah();
       tutupUltah();
       render();
     }
@@ -704,6 +736,7 @@ Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
     function hapusUltah() {
       dataUltah = null;
       try { localStorage.removeItem(KUNCI_ULTAH); } catch (e) {}
+      if (window.sinkronUltah) window.sinkronUltah();
       tutupUltah();
       render();
     }
@@ -821,22 +854,32 @@ Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
     const LN = NATIVE && window.Capacitor.Plugins ? window.Capacitor.Plugins.LocalNotifications : null; // hanya untuk izin
     const AN = NATIVE && window.Capacitor.Plugins ? window.Capacitor.Plugins.AlarmNative : null;
     const KEY = 'jam_alarms_v1';
+    const TINGGI = 44;                       // tinggi satu baris roda pemilih (px)
+    const NAMA_ULANG = { 0: 'Satu kali', 127: 'Setiap hari', 62: 'Senin–Jumat', 65: 'Akhir pekan' };
 
     let alarms = [];
     try { alarms = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { alarms = []; }
     if (!Array.isArray(alarms)) alarms = [];
+    alarms.forEach((a) => {                  // migrasi alarm versi lama
+      if (a.days === undefined) { a.days = a.repeat ? 127 : 0; a.vib = true; a.snMin = 0; a.snCount = 0; }
+    });
 
-    let ringNative = false;
+    let ringNative = false, laguDipilih = null, sedangUbah = null;
     const sudahBunyi = {};
     let audioCtx = null, beepTimer = null, wakeLock = null;
 
     function simpan() { try { localStorage.setItem(KEY, JSON.stringify(alarms)); } catch (e) {} }
+    function jam12(h) { return pad2(h % 12 === 0 ? 12 : h % 12) + ':' ; }
+    function teksWaktu(a) { return jam12(a.h) + pad2(a.m) + ' ' + (a.h >= 12 ? 'PM' : 'AM'); }
 
     function kapanBerikutnya(a) {
-      const d = new Date();
-      d.setHours(a.h, a.m, 0, 0);
-      if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
-      return d;
+      for (let i = 0; i < 8; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        d.setHours(a.h, a.m, 0, 0);
+        if ((!a.days || (a.days & (1 << d.getDay()))) && d.getTime() > Date.now()) return d;
+      }
+      return new Date(Date.now() + 86400000);
     }
 
     // --- Bunyi di browser (hanya saat halaman terbuka) ---
@@ -858,19 +901,14 @@ Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
     function selesaiBip() { if (beepTimer) { clearInterval(beepTimer); beepTimer = null; } }
     function mulaiBip() { selesaiBip(); bipSekali(); beepTimer = setInterval(bipSekali, 500); }
 
-    // --- Alarm native (Android): dijadwalkan lewat AlarmManager, lagu diputar oleh layanan native ---
-    let laguDipilih = null;
-
+    // --- Alarm native (Android) ---
     async function mintaIzin() {
       if (!LN) return true;
       try {
         let p = await LN.checkPermissions();
         if (p.display !== 'granted') {
           p = await LN.requestPermissions();
-          if (p.display !== 'granted') {
-            alert('Izin notifikasi diperlukan agar alarm bisa tampil dan berbunyi.');
-            return false;
-          }
+          if (p.display !== 'granted') { alert('Izin notifikasi diperlukan agar alarm bisa tampil dan berbunyi.'); return false; }
         }
       } catch (e) {}
       return true;
@@ -881,146 +919,169 @@ Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
       try {
         if (!a.on) { await AN.cancel({ id: a.id }); return; }
         await AN.schedule({
-          id: a.id, h: a.h, m: a.m, repeat: !!a.repeat,
-          label: a.label || '', uri: a.song ? a.song.uri : ''
+          id: a.id, h: a.h, m: a.m, days: a.days, label: a.label || '', uri: a.song ? a.song.uri : '',
+          vib: a.vib !== false, snMin: a.snMin || 0, snCount: a.snCount || 0
         });
       } catch (e) { alert('Gagal menjadwalkan alarm: ' + (e && e.message ? e.message : e)); }
     }
-
-    async function batalkan(a) {
-      if (!AN) return;
-      try { await AN.cancel({ id: a.id }); } catch (e) {}
-    }
+    async function batalkan(a) { if (AN) { try { await AN.cancel({ id: a.id }); } catch (e) {} } }
 
     async function pilihLagu() {
       if (!AN) { alert('Memilih lagu hanya tersedia di aplikasi Android.'); return; }
       try {
         const r = await AN.pickSong();
         laguDipilih = { uri: r.uri, name: r.name || 'Lagu' };
-        $('laguNama').textContent = '🎵 ' + laguDipilih.name;
+        $('laguNama').textContent = laguDipilih.name;
       } catch (e) { /* dibatalkan */ }
     }
 
     async function tesAlarm() {
       if (!AN) { alert('Tes bunyi hanya tersedia di aplikasi Android.'); return; }
       await mintaIzin();
-      try {
-        await AN.testRing({ uri: laguDipilih ? laguDipilih.uri : '' });
-      } catch (e) { alert('Gagal: ' + (e && e.message ? e.message : e)); }
+      try { await AN.testRing({ uri: laguDipilih ? laguDipilih.uri : '' }); }
+      catch (e) { alert('Gagal: ' + (e && e.message ? e.message : e)); }
     }
 
-    function laguBawaan() {
-      laguDipilih = null;
-      $('laguNama').textContent = 'Nada bawaan';
+    // --- Roda pemilih waktu ---
+    function bangunRoda(el, isi) {
+      el.textContent = '';
+      const sp = () => { const s = document.createElement('div'); s.style.height = (TINGGI * 2) + 'px'; return s; };
+      el.appendChild(sp());
+      isi.forEach((t) => { const i = document.createElement('div'); i.className = 'wi'; i.textContent = t; el.appendChild(i); });
+      el.appendChild(sp());
+      el.onscroll = () => tandaiRoda(el);
+    }
+    function tandaiRoda(el) {
+      const idx = Math.round(el.scrollTop / TINGGI);
+      el.querySelectorAll('.wi').forEach((n, i) => n.classList.toggle('sel', i === idx));
+    }
+    const idxRoda = (el) => Math.round(el.scrollTop / TINGGI);
+    function setRoda(el, idx) { el.scrollTop = idx * TINGGI; tandaiRoda(el); }
+
+    // --- Lembar "Tambahkan alarm" ---
+    function editAlarm(a) {
+      sedangUbah = a ? a.id : null;
+      if (!$('wJam').children.length) {
+        bangunRoda($('wJam'), Array.from({ length: 12 }, (_, i) => String(i + 1)));
+        bangunRoda($('wMenit'), Array.from({ length: 60 }, (_, i) => pad2(i)));
+        bangunRoda($('wAmpm'), ['AM', 'PM']);
+        for (const m of [5, 10, 15, 20, 30]) $('sTundaMnt').add(new Option(m + ' menit', m));
+        for (const k of [0, 1, 3, 5]) $('sTundaKali').add(new Option(k ? k + ' kali' : 'Mati', k));
+      }
+      siapkanAudio();
+      const now = new Date();
+      const h = a ? a.h : now.getHours(), m = a ? a.m : now.getMinutes();
+      $('sheetJudul').textContent = a ? 'Ubah alarm' : 'Tambahkan alarm';
+      $('sUlang').value = a ? String(a.days) : '0';
+      $('sLabel').value = a ? (a.label || '') : '';
+      $('sGetar').checked = a ? a.vib !== false : true;
+      $('sTundaMnt').value = String(a && a.snMin ? a.snMin : 10);
+      $('sTundaKali').value = String(a ? (a.snCount || 0) : 3);
+      laguDipilih = a && a.song ? a.song : null;
+      $('laguNama').textContent = laguDipilih ? laguDipilih.name : 'Nada bawaan';
+      $('sheetAlarm').classList.add('show');
+      setTimeout(() => {
+        setRoda($('wJam'), (h % 12 === 0 ? 12 : h % 12) - 1);
+        setRoda($('wMenit'), m);
+        setRoda($('wAmpm'), h >= 12 ? 1 : 0);
+      }, 30);
+    }
+    function tutupSheet() { $('sheetAlarm').classList.remove('show'); }
+
+    async function simpanAlarm() {
+      if (!(await mintaIzin())) return;
+      const j = idxRoda($('wJam')) + 1, pm = idxRoda($('wAmpm')) === 1;
+      const a = {
+        id: sedangUbah || Math.floor(Date.now() % 2000000000),
+        h: (j % 12) + (pm ? 12 : 0), m: idxRoda($('wMenit')),
+        days: parseInt($('sUlang').value, 10),
+        label: $('sLabel').value.trim().slice(0, 40),
+        song: laguDipilih, vib: $('sGetar').checked,
+        snMin: parseInt($('sTundaMnt').value, 10), snCount: parseInt($('sTundaKali').value, 10),
+        on: true
+      };
+      a.at = kapanBerikutnya(a).getTime();
+      alarms = alarms.filter((x) => x.id !== a.id);
+      alarms.push(a);
+      alarms.sort((x, y) => (x.h * 60 + x.m) - (y.h * 60 + y.m));
+      simpan(); gambarDaftar(); tutupSheet();
+      await jadwalkan(a);
     }
 
-    // --- Tampilan daftar alarm ---
+    // --- Daftar alarm ---
     function gambarDaftar() {
       const wadah = $('alarmDaftar');
       wadah.textContent = '';
       if (!alarms.length) {
         const k = document.createElement('div');
-        k.className = 'alarm-empty';
-        k.textContent = 'Belum ada alarm.';
-        wadah.appendChild(k);
-        return;
+        k.className = 'alarm-empty'; k.textContent = 'Belum ada alarm.';
+        wadah.appendChild(k); return;
       }
       alarms.forEach((a) => {
         const row = document.createElement('div');
         row.className = 'alarm-item';
 
-        const t = document.createElement('div');
-        t.className = 't';
-        t.textContent = pad2(a.h) + ':' + pad2(a.m);
-
-        const l = document.createElement('div');
-        l.className = 'l';
-        l.textContent = (a.label || 'Alarm') + ' · ' + (a.repeat ? 'Setiap hari' : 'Sekali') + (a.song ? ' · 🎵 ' + a.song.name : '');
+        const info = document.createElement('div');
+        info.style.flex = '1'; info.style.cursor = 'pointer';
+        info.onclick = () => editAlarm(a);
+        const t = document.createElement('div'); t.className = 't'; t.textContent = teksWaktu(a);
+        const l = document.createElement('div'); l.className = 'l';
+        l.textContent = (a.label || 'Alarm') + ' · ' + (NAMA_ULANG[a.days] || 'Kustom') + (a.song ? ' · 🎵 ' + a.song.name : '');
+        info.appendChild(t); info.appendChild(l);
 
         const sw = document.createElement('input');
-        sw.type = 'checkbox';
-        sw.checked = !!a.on;
+        sw.type = 'checkbox'; sw.className = 'sw'; sw.checked = !!a.on;
         sw.onchange = async () => {
           a.on = sw.checked;
           if (a.on) {
             if (!(await mintaIzin())) { a.on = false; sw.checked = false; return; }
             a.at = kapanBerikutnya(a).getTime();
           }
-          simpan();
-          await jadwalkan(a);
+          simpan(); await jadwalkan(a);
         };
 
         const del = document.createElement('button');
-        del.className = 'action-btn';
-        del.textContent = '🗑';
-        del.onclick = async () => {
-          await batalkan(a);
-          alarms = alarms.filter((x) => x.id !== a.id);
-          simpan();
-          gambarDaftar();
-        };
+        del.className = 'action-btn'; del.textContent = '🗑';
+        del.onclick = async () => { await batalkan(a); alarms = alarms.filter((x) => x.id !== a.id); simpan(); gambarDaftar(); };
 
-        row.appendChild(t); row.appendChild(l); row.appendChild(sw); row.appendChild(del);
+        row.appendChild(info); row.appendChild(sw); row.appendChild(del);
         wadah.appendChild(row);
       });
     }
-
-    async function tambahAlarm() {
-      const v = $('alarmWaktu').value;
-      if (!v) { alert('Pilih jam alarm dulu.'); return; }
-      siapkanAudio();
-      if (!(await mintaIzin())) return;
-      const [h, m] = v.split(':').map(Number);
-      const a = {
-        id: Math.floor(Date.now() % 2000000000),
-        h: h, m: m,
-        label: $('alarmLabel').value.trim().slice(0, 40),
-        repeat: $('alarmUlang').checked,
-        song: laguDipilih,
-        on: true
-      };
-      a.at = kapanBerikutnya(a).getTime();
-      alarms.push(a);
-      alarms.sort((x, y) => (x.h * 60 + x.m) - (y.h * 60 + y.m));
-      simpan();
-      gambarDaftar();
-      $('alarmLabel').value = '';
-      laguBawaan();
-      await jadwalkan(a);
-    }
-
     function bukaAlarm() { siapkanAudio(); gambarDaftar(); $('alarmPanel').classList.add('show'); }
     function tutupAlarm() { $('alarmPanel').classList.remove('show'); }
 
     // --- Layar "alarm berbunyi" ---
     function bunyi(a) {
-      $('ringTime').textContent = pad2(a.h) + ':' + pad2(a.m);
+      $('ringTime').textContent = a.h !== undefined ? teksWaktu(a) : '';
       $('ringLabel').textContent = a.label || 'Alarm';
       $('ringInfo').textContent = a.info ? 'Suara: ' + a.info : '';
+      $('ringTunda').style.display = a.canSnooze ? '' : 'none';
       $('ringOverlay').classList.add('show');
-      if (!NATIVE) {
-        mulaiBip();
-        if (navigator.vibrate) navigator.vibrate([500, 300, 500]);
-      }
+      if (!NATIVE) { mulaiBip(); if (navigator.vibrate) navigator.vibrate([500, 300, 500]); }
     }
     function matikanAlarm() {
       $('ringOverlay').classList.remove('show');
-      selesaiBip();
-      ringNative = false;
+      selesaiBip(); ringNative = false;
       if (AN) { try { AN.stop(); } catch (e) {} }
+    }
+    function tundaAlarm() {
+      $('ringOverlay').classList.remove('show');
+      ringNative = false;
+      if (AN) { try { AN.snooze(); } catch (e) {} }
     }
 
     // Cek tiap detik saat halaman terbuka
     setInterval(() => {
       const n = new Date();
-      const h = n.getHours(), m = n.getMinutes();
-      const kunci = n.toDateString() + ' ' + h + ':' + m;
+      const kunci = n.toDateString() + ' ' + n.getHours() + ':' + n.getMinutes();
       let berubah = false;
       alarms.forEach((a) => {
-        if (!a.on || a.h !== h || a.m !== m) return;
+        if (!a.on || a.h !== n.getHours() || a.m !== n.getMinutes()) return;
+        if (a.days && !(a.days & (1 << n.getDay()))) return;
         if (sudahBunyi[a.id] === kunci) return;
         sudahBunyi[a.id] = kunci;
-        if (!a.repeat) { a.on = false; berubah = true; }
+        if (!a.days) { a.on = false; berubah = true; }
         bunyi(a);
       });
       if (berubah) { simpan(); gambarDaftar(); }
@@ -1030,54 +1091,51 @@ Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
     async function toggleWidget() {
       const aktif = document.body.classList.toggle('widget');
       try {
-        if (aktif) {
-          if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen');
-        } else if (wakeLock) {
-          await wakeLock.release(); wakeLock = null;
-        }
+        if (aktif) { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); }
+        else if (wakeLock) { await wakeLock.release(); wakeLock = null; }
       } catch (e) {}
     }
 
-    window.bukaAlarm = bukaAlarm;
-    window.tutupAlarm = tutupAlarm;
-    window.tambahAlarm = tambahAlarm;
-    window.matikanAlarm = matikanAlarm;
-    window.toggleWidget = toggleWidget;
-    window.pilihLagu = pilihLagu;
-    window.laguBawaan = laguBawaan;
-    window.tesAlarm = tesAlarm;
+    // Kirim data ulang tahun ke widget layar utama
+    window.sinkronUltah = function () {
+      if (!AN) return;
+      try {
+        AN.setBirthday({
+          on: !!dataUltah, d: dataUltah ? dataUltah.d : 1, m: dataUltah ? dataUltah.m : 0,
+          y: dataUltah ? dataUltah.y : 0, nama: dataUltah ? dataUltah.nama : ''
+        });
+      } catch (e) {}
+    };
+
+    Object.assign(window, { bukaAlarm, tutupAlarm, editAlarm, tutupSheet, simpanAlarm, matikanAlarm, tundaAlarm, toggleWidget, pilihLagu, tesAlarm });
 
     // --- Awal ---
+    $('alarmStatus').textContent = NATIVE
+      ? (AN ? 'Mesin alarm native: aktif ✅' : 'Mesin alarm native: TIDAK DITEMUKAN ❌ (pasang ulang APK terbaru)') : '';
     $('alarmCatatan').textContent = NATIVE
       ? 'Alarm tetap berbunyi walau aplikasi ditutup. Jika tidak berbunyi, izinkan notifikasi dan "Alarm & pengingat" di pengaturan aplikasi.'
       : 'Di browser, alarm hanya berbunyi saat halaman ini terbuka. Pasang aplikasinya agar alarm tetap berbunyi saat ditutup.';
 
-    $('alarmStatus').textContent = NATIVE
-      ? (AN ? 'Mesin alarm native: aktif ✅' : 'Mesin alarm native: TIDAK DITEMUKAN ❌ (pasang ulang APK terbaru)')
-      : '';
-
     if (NATIVE) {
       const fs = $('fsBtn'); if (fs) fs.style.display = 'none';
-      // Alarm sekali yang waktunya sudah lewat dianggap selesai
-      alarms.forEach((a) => { if (!a.repeat && a.on && a.at && a.at < Date.now() - 60000) a.on = false; });
+      alarms.forEach((a) => { if (!a.days && a.on && a.at && a.at < Date.now() - 60000) a.on = false; });
       simpan();
       alarms.forEach((a) => jadwalkan(a));
-      // Sinkronkan layar "alarm berbunyi" dengan layanan native (termasuk saat dimatikan dari notifikasi)
-      const cekBerbunyi = () => {
-        AN.getRinging().then((r) => {
-          if (r.ringing && !ringNative) {
-            ringNative = true;
-            bunyi({ h: r.h, m: r.m, label: r.label, info: r.sumber });
-          } else if (!r.ringing && ringNative) {
-            ringNative = false;
-            $('ringOverlay').classList.remove('show');
-          }
-        }).catch(() => {});
-      };
+      window.sinkronUltah();
       if (AN) {
-        cekBerbunyi();
-        setInterval(cekBerbunyi, 1500);
-        document.addEventListener('visibilitychange', cekBerbunyi);
+        const cek = () => {
+          AN.getRinging().then((r) => {
+            if (r.ringing && !ringNative) {
+              ringNative = true;
+              const jam = r.h, a = { h: r.h, m: r.m, label: r.label, info: r.sumber, canSnooze: r.canSnooze };
+              bunyi(a);
+            } else if (!r.ringing && ringNative) {
+              ringNative = false; $('ringOverlay').classList.remove('show');
+            }
+          }).catch(() => {});
+        };
+        cek(); setInterval(cek, 1500);
+        document.addEventListener('visibilitychange', cek);
       }
     }
   })();
