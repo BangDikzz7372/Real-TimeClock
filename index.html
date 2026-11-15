@@ -294,7 +294,7 @@
       animation: kelapKelip 1.5s infinite;
     }
     .birthday-event h3 { color: #f472b6; font-size: 18px; text-shadow: 0 0 10px #ec4899; margin-bottom: 4px; }
-    .birthday-event p { font-size: 12px; line-height: 1.4; color: #fbcfe8; }
+    .birthday-event p { font-size: 12px; line-height: 1.4; color: #fbcfe8; white-space: pre-line; }
 
     @keyframes kelapKelip {
       0%, 100% { opacity: 1; transform: scale(1); }
@@ -318,12 +318,14 @@
     }
     .panel h3 { margin-bottom: 10px; color: #fde68a; }
     .alarm-form { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
-    .alarm-form input[type=time], .alarm-form input[type=text] {
+    .alarm-form input[type=time], .alarm-form input[type=text], .alarm-form input[type=number], .alarm-form select {
       background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
       color: #fff; border-radius: 10px; padding: 6px 8px; font-size: 14px;
       font-family: inherit; color-scheme: dark;
     }
     .alarm-form input[type=text] { flex: 1; min-width: 120px; }
+    .alarm-form input[type=number] { width: 90px; }
+    .alarm-form input.lebar { flex: 1; min-width: 120px; width: auto; }
     .alarm-form label { font-size: 12px; display: flex; align-items: center; gap: 4px; }
     .alarm-item {
       display: flex; align-items: center; gap: 8px; padding: 8px 4px;
@@ -400,13 +402,15 @@
       <button class="action-btn" id="fsBtn" onclick="toggleLayarPenuh()">Layar Penuh</button>
       <button class="action-btn" id="alarmBtn" onclick="bukaAlarm()">⏰ Alarm</button>
       <button class="action-btn" id="widgetBtn" onclick="toggleWidget()">🧩 Mode Widget</button>
+      <button class="action-btn" id="ultahBtn" onclick="bukaUltah()">🎂 Ulang Tahun</button>
     </div>
 
     <div class="countdown" id="hitungMundur"></div>
 
     <div class="birthday-event" id="kejutanUltah">
-      <h3>🎉 HAPPY 18th BIRTHDAY! 🎂</h3>
-      <p>Selamat ulang tahun ke-18!<br>Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
+      <h3 id="ucapanJudul">🎉 HAPPY BIRTHDAY! 🎂</h3>
+      <p id="ucapanIsi">Selamat ulang tahun!
+Semoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀</p>
     </div>
   </div>
 
@@ -432,6 +436,24 @@
       <div class="panel-actions">
         <button class="action-btn" onclick="tesAlarm()">🔔 Tes bunyi</button>
         <button class="action-btn" onclick="tutupAlarm()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="ultahPanel">
+    <div class="panel">
+      <h3>🎂 Ulang Tahun</h3>
+      <div class="alarm-form">
+        <input type="text" id="ultahNama" class="lebar" placeholder="Nama (opsional)" maxlength="30">
+        <input type="number" id="ultahTgl" placeholder="Tgl" min="1" max="31" inputmode="numeric">
+        <select id="ultahBln"></select>
+        <input type="number" id="ultahThn" class="lebar" placeholder="Tahun lahir (opsional)" min="1900" max="2100" inputmode="numeric">
+      </div>
+      <div class="alarm-note">Isi tahun lahir agar ucapan menampilkan umur. Data disimpan di perangkat ini saja.</div>
+      <div class="panel-actions">
+        <button class="action-btn" onclick="simpanUltah()">Simpan</button>
+        <button class="action-btn" onclick="hapusUltah()">Hapus</button>
+        <button class="action-btn" onclick="tutupUltah()">Tutup</button>
       </div>
     </div>
   </div>
@@ -464,8 +486,16 @@
     let timerSimulasi = null;
     let timerJam = null;
 
-    const BULAN_ULTAH = 0;      // Januari (0 = Januari)
-    const TANGGAL_ULTAH = 25;
+    // Data ulang tahun disimpan di perangkat, jadi tiap pengguna mengatur sendiri
+    const KUNCI_ULTAH = 'jam_ultah_v1';
+    function bacaUltah() {
+      try {
+        const v = JSON.parse(localStorage.getItem(KUNCI_ULTAH) || 'null');
+        if (v && v.d >= 1 && v.d <= 31 && v.m >= 0 && v.m <= 11) return v;
+      } catch (e) {}
+      return null;
+    }
+    let dataUltah = bacaUltah();   // {d: tanggal, m: bulan (0-11), y: tahun lahir atau 0, nama}
 
     const namaHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     const namaBulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
@@ -611,11 +641,71 @@
       return 'UTC' + tanda + j + (m ? ':' + pad(m) : '');
     }
 
+    function tanggalUltah(tahun) {
+      let d = dataUltah.d;
+      const kabisat = (tahun % 4 === 0 && tahun % 100 !== 0) || tahun % 400 === 0;
+      if (dataUltah.m === 1 && d === 29 && !kabisat) d = 28;   // lahir 29 Feb: tahun biasa dirayakan 28 Feb
+      return new Date(tahun, dataUltah.m, d);
+    }
+
+    // Mengembalikan null jika tanggal ulang tahun belum diatur
     function hariMenujuUltah(sekarang) {
+      if (!dataUltah) return null;
       const hariIni = new Date(sekarang.getFullYear(), sekarang.getMonth(), sekarang.getDate());
-      let target = new Date(sekarang.getFullYear(), BULAN_ULTAH, TANGGAL_ULTAH);
-      if (target < hariIni) target = new Date(sekarang.getFullYear() + 1, BULAN_ULTAH, TANGGAL_ULTAH);
+      let target = tanggalUltah(sekarang.getFullYear());
+      if (target < hariIni) target = tanggalUltah(sekarang.getFullYear() + 1);
       return Math.round((target - hariIni) / 86400000);
+    }
+
+    function isiUcapan(sekarang) {
+      const umur = dataUltah.y ? sekarang.getFullYear() - dataUltah.y : 0;
+      const ord = (n) => {
+        const s = n % 100;
+        if (s >= 11 && s <= 13) return n + 'th';
+        return n + (['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+      };
+      const nama = dataUltah.nama || '';
+      document.getElementById('ucapanJudul').textContent =
+        '🎉 HAPPY ' + (umur > 0 ? ord(umur) + ' ' : '') + 'BIRTHDAY' + (nama ? ', ' + nama.toUpperCase() : '') + '! 🎂';
+      document.getElementById('ucapanIsi').textContent =
+        'Selamat ulang tahun' + (umur > 0 ? ' ke-' + umur : '') + '!\nSemoga makin sukses, jadi miliarder, dan membanggakan orang tua! 🤲✨🚀';
+    }
+
+    function bukaUltah() {
+      const sel = document.getElementById('ultahBln');
+      if (!sel.options.length) {
+        namaBulan.forEach((b, i) => {
+          const o = document.createElement('option');
+          o.value = i; o.textContent = b;
+          sel.appendChild(o);
+        });
+      }
+      document.getElementById('ultahNama').value = dataUltah ? (dataUltah.nama || '') : '';
+      document.getElementById('ultahTgl').value = dataUltah ? dataUltah.d : '';
+      sel.value = dataUltah ? dataUltah.m : new Date().getMonth();
+      document.getElementById('ultahThn').value = dataUltah && dataUltah.y ? dataUltah.y : '';
+      document.getElementById('ultahPanel').classList.add('show');
+    }
+    function tutupUltah() { document.getElementById('ultahPanel').classList.remove('show'); }
+
+    function simpanUltah() {
+      const d = parseInt(document.getElementById('ultahTgl').value, 10);
+      const m = parseInt(document.getElementById('ultahBln').value, 10);
+      const y = parseInt(document.getElementById('ultahThn').value, 10) || 0;
+      const maks = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m];
+      if (!(d >= 1 && d <= maks)) { alert('Tanggal tidak valid untuk bulan ' + namaBulan[m] + '.'); return; }
+      if (y && (y < 1900 || y > new Date().getFullYear())) { alert('Tahun lahir tidak valid.'); return; }
+      dataUltah = { d: d, m: m, y: y, nama: document.getElementById('ultahNama').value.trim().slice(0, 30) };
+      try { localStorage.setItem(KUNCI_ULTAH, JSON.stringify(dataUltah)); } catch (e) {}
+      tutupUltah();
+      render();
+    }
+
+    function hapusUltah() {
+      dataUltah = null;
+      try { localStorage.removeItem(KUNCI_ULTAH); } catch (e) {}
+      tutupUltah();
+      render();
     }
 
     function updateLingkungan(jamAsli, menitAsli) {
@@ -700,8 +790,10 @@
       const box = document.getElementById('box');
       const sisaHari = hariMenujuUltah(sekarang);
       const ultah = sisaHari === 0;
+      if (ultah) isiUcapan(sekarang);
       document.getElementById('kejutanUltah').style.display = ultah ? 'block' : 'none';
-      document.getElementById('hitungMundur').innerText = ultah ? '' : '🎂 ' + sisaHari + ' hari lagi menuju hari ulang tahun';
+      document.getElementById('hitungMundur').innerText = (sisaHari === null || ultah) ? ''
+        : '🎂 ' + sisaHari + ' hari lagi menuju hari ulang tahun' + (dataUltah.nama ? ' ' + dataUltah.nama : '');
       box.style.borderColor = ultah ? 'rgba(236, 72, 153, 0.8)' : '';
       box.style.boxShadow = ultah ? '0 0 25px rgba(236, 72, 153, 0.5)' : '';
     }
